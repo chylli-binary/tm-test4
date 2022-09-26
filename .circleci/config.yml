@@ -1,3 +1,25 @@
+version: 2
+alias:
+  - &install_dzil 
+    run:
+      command:
+        cpm install -g --no-test Dist::Zilla Dist::Zilla::App::Command::cover ExtUtils::MakeMaker
+      name: Install Dzil
+  - &install_author_deps
+    run: 
+      name: Install dzil author dependencies
+      command: |
+        # TODO remove this line before merge
+        cpanm git@github.com:chylli-binary/perl-Dist-Zilla-PluginBundle-Author-DERIV.git@bumpversion
+        cpm install -g \
+        -w 2 \
+        --mirror=http://cpan.cpantesters.org/ $(dzil authordeps --missing)
+  - &install_deps
+    run:
+      name: Install dist deps
+      command: |
+        dzil listdeps --author --missing --cpanm-versions | xargs cpanm -n
+ 
 jobs:
   test:
     parameters:
@@ -7,23 +29,11 @@ jobs:
         default: "5.34"
     docker:
       - image: perldocker/perl-tester:<< parameters.perl-version >>
-    steps: &test_steps
+    steps:
       - checkout
-      - run:
-          command:
-            cpm install -g --no-test Dist::Zilla Dist::Zilla::App::Command::cover ExtUtils::MakeMaker
-          name: Install Dzil
-      - run:
-          name: Install dzil author dependencies
-          command: |
-            cpanm git@github.com:chylli-binary/perl-Dist-Zilla-PluginBundle-Author-DERIV.git@bumpversion
-            cpm install -g \
-            -w 2 \
-            --mirror=http://cpan.cpantesters.org/ $(dzil authordeps --missing)
-      - run:
-          name: Install dist deps
-          command: |
-            dzil listdeps --author --missing --cpanm-versions | xargs cpanm -n
+      - *install_dzil
+      - *install_author_deps
+      - *install_deps
       - run:
           name: Run Tests
           command: |
@@ -33,21 +43,9 @@ jobs:
       - image: perldocker/perl-tester:5.34
     steps:
       - checkout
-      - run:
-          command:
-            cpm install -g --no-test Dist::Zilla Dist::Zilla::App::Command::cover ExtUtils::MakeMaker
-          name: Install Dzil
-      - run:
-          name: Install dzil author dependencies
-          command: |
-            cpanm git@github.com:chylli-binary/perl-Dist-Zilla-PluginBundle-Author-DERIV.git@bumpversion
-            cpm install -g \
-            -w 2 \
-            --mirror=http://cpan.cpantesters.org/ $(dzil authordeps --missing)
-      - run:
-          name: Install dist deps
-          command: |
-            dzil listdeps --author --missing --cpanm-versions | xargs cpanm -n
+      - *install_dzil
+      - *install_author_deps
+      - *install_deps
       - run:
           name: setup PAUSE account
           command: |
@@ -68,6 +66,7 @@ jobs:
                 echo "No changes, no need release"
                 exit 0
             fi
+            # TODO remove --trial before merge
             echo "y\n" | DZIL_CONFIRMRELEASE_DEFAULT=y dzil release --trial
             git push
 
