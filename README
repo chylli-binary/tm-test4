@@ -1,0 +1,17 @@
+NAME
+
+    Test::Release4 - Module abstract
+
+SYNOPSIS
+
+        use Test::Release4;
+        my $instance = Test::Release4->new;
+
+DESCRIPTION
+
+METHODS
+
+SEE ALSO
+
+      * 
+
